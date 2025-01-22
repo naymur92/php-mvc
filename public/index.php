@@ -6,6 +6,7 @@ use App\Core\Router;
 const BASE_PATH = __DIR__ . '/../';
 
 require BASE_PATH .  'vendor/autoload.php';
+require BASE_PATH .  'app/core/functions.php';
 
 
 ############################### Routing part starts ###############################

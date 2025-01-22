@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
-class HomeController
+use App\Core\Controller;
+
+class HomeController extends Controller
 {
     /**
      * Display the home page
@@ -11,6 +13,6 @@ class HomeController
      */
     public function index()
     {
-        echo "index page is here";
+        view('pages.homepage', array('title' => "Home"));
     }
 }
