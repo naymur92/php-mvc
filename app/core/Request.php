@@ -29,8 +29,10 @@ class Request
     public function getRequestUri()
     {
         $uri = $_SERVER['REQUEST_URI'];
+
         // Remove query parameters
         $uri = strtok($uri, '?');
+
         // Normalize root '/' or trailing slashes
         return $uri === '/' ? '/' : rtrim($uri, '/');
     }

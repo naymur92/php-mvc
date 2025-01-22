@@ -59,18 +59,19 @@ class Router
         $method = $request->getRequestMethod();
         $uri = $request->getRequestUri();
 
-        // Ensure routes for the requested method exist
+        // Check incoming method exist or not
         if (!isset($this->routes[$method])) {
             throw new \Exception("Method $method not allowed", 405);
         }
 
         // Match the route
         foreach ($this->routes[$method] as $route => $callback) {
+            // for static routes
             if ($route === $uri) {
                 return $this->executeCallback($callback);
             }
 
-            // Handle dynamic routes
+            // for dynamic routes
             $pattern = $this->convertToRegex($route);
             if (preg_match($pattern, $uri, $matches)) {
                 array_shift($matches); // Remove the full match
