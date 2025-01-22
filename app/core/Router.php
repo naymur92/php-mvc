@@ -74,7 +74,7 @@ class Router
             // for dynamic routes
             $pattern = $this->convertToRegex($route);
             if (preg_match($pattern, $uri, $matches)) {
-                array_shift($matches); // Remove the full match
+                array_shift($matches);
                 return $this->executeCallback($callback, $matches);
             }
         }

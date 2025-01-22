@@ -1,5 +1,6 @@
 <?php
 
+use App\Core\Config;
 use App\Core\Request;
 use App\Core\Router;
 
@@ -8,6 +9,8 @@ const BASE_PATH = __DIR__ . '/../';
 require BASE_PATH .  'vendor/autoload.php';
 require BASE_PATH .  'app/core/functions.php';
 
+// Load environment configuration
+Config::loadEnv();
 
 ############################### Routing part starts ###############################
 $router = new Router();
