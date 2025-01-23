@@ -12,20 +12,6 @@ abstract class BaseModel implements ModelInterface
     protected array $fillable = [];
 
     /**
-     * Set the table dynamically for chaining
-     *
-     * @param string|null $table
-     * @return static
-     */
-    public function table(string $table = null): static
-    {
-        if ($table) {
-            $this->table = $table;
-        }
-        return $this;
-    }
-
-    /**
      * Filter fillable fields
      *
      * @param array $data
@@ -103,6 +89,20 @@ abstract class BaseModel implements ModelInterface
     }
 
 
+
+    /**
+     * Set the table dynamically for query builder
+     *
+     * @param string|null $table
+     * @return self
+     */
+    public function table(string $table = null): self
+    {
+        if ($table) {
+            $this->table = $table;
+        }
+        return $this;
+    }
 
     /**
      * Add 'where' condition to query builder
