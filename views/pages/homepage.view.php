@@ -2,7 +2,7 @@
 $layoutFile = 'layouts.main';
 ?>
 
-<div class="col-sm-8">
+<div class="col-sm-12">
     <h2>TITLE HEADING</h2>
     <h5>Title description, Dec 7, 2020</h5>
     <div class="fakeimg">Fake Image</div>

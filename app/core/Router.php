@@ -83,28 +83,27 @@ class Router
         $method = $request->getRequestMethod();
         $uri = $request->getRequestUri();
 
-        // Check incoming method exist or not
         if (!isset($this->routes[$method])) {
             throw new \Exception("Method $method not allowed", 405);
         }
 
-        // Match the route
         foreach ($this->routes[$method] as $route => $callback) {
-            // for static routes
+            // Static routes
             if ($route === $uri) {
-                return $this->executeCallback($callback);
+                return $this->executeCallback($callback, [$request]);
             }
 
-            // for dynamic routes
+            // Dynamic routes
             $pattern = $this->convertToRegex($route);
             if (preg_match($pattern, $uri, $matches)) {
                 array_shift($matches);
-                return $this->executeCallback($callback, $matches);
+                return $this->executeCallback($callback, array_merge([$request], $matches));
             }
         }
 
         throw new \Exception("Route not found", 404);
     }
+
 
     /**
      * Convert a route with placeholders
@@ -122,17 +121,37 @@ class Router
      * Execute a callback or controller action
      *
      * @param callable|array $callback
-     * @param array $params
-     * @return void
+     * @param array $routeParams
+     * @return mixed
      */
-    private function executeCallback(callable|array $callback, array $params = [])
+    private function executeCallback(callable|array $callback, array $routeParams = [])
     {
         if (is_array($callback)) {
             [$controllerClass, $method] = $callback;
+
+            // Instantiate the controller
             $controller = new $controllerClass();
+
+            // Use reflection to inspect the method's parameters
+            $reflection = new \ReflectionMethod($controller, $method);
+            $params = [];
+
+            foreach ($reflection->getParameters() as $param) {
+                $paramType = $param->getType();
+
+                if ($paramType && $paramType->getName() === Request::class) {
+                    // Inject the Request object manually
+                    $params[] = new Request();
+                } else {
+                    // Inject route parameters for remaining arguments
+                    $params[] = array_shift($routeParams);
+                }
+            }
+
             return call_user_func_array([$controller, $method], $params);
         }
 
-        return call_user_func_array($callback, $params);
+        // For simple callable functions
+        return call_user_func_array($callback, $routeParams);
     }
 }

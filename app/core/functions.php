@@ -29,3 +29,15 @@ function dd(mixed $data): void
 
     die;
 }
+
+
+/**
+ * Check the current url
+ *
+ * @param string $value
+ * @return boolean
+ */
+function urlIs(string $value): bool
+{
+    return $_SERVER['REQUEST_URI'] === $value;
+}
