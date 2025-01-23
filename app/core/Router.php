@@ -8,7 +8,12 @@ class Router
     protected array $supportedMethods = ['GET', 'POST', 'PUT', 'DELETE'];
 
     /**
-     * Register a route for any HTTP method.
+     * Register a route for any HTTP method
+     *
+     * @param string $method
+     * @param string $uri
+     * @param callable|array $callback
+     * @return void
      */
     public function addRoute(string $method, string $uri, callable|array $callback): void
     {
@@ -20,7 +25,11 @@ class Router
     }
 
     /**
-     * Register a GET route.
+     * Register a GET route
+     *
+     * @param string $uri
+     * @param callable|array $callback
+     * @return void
      */
     public function get(string $uri, callable|array $callback): void
     {
@@ -28,7 +37,11 @@ class Router
     }
 
     /**
-     * Register a POST route.
+     * Register a POST route
+     *
+     * @param string $uri
+     * @param callable|array $callback
+     * @return void
      */
     public function post(string $uri, callable|array $callback): void
     {
@@ -36,7 +49,11 @@ class Router
     }
 
     /**
-     * Register a PUT route.
+     * Register a PUT route
+     *
+     * @param string $uri
+     * @param callable|array $callback
+     * @return void
      */
     public function put(string $uri, callable|array $callback): void
     {
@@ -44,7 +61,11 @@ class Router
     }
 
     /**
-     * Register a DELETE route.
+     * Register a DELETE route
+     *
+     * @param string $uri
+     * @param callable|array $callback
+     * @return void
      */
     public function delete(string $uri, callable|array $callback): void
     {
@@ -52,7 +73,10 @@ class Router
     }
 
     /**
-     * Resolve the current route and execute its callback.
+     * Resolve the current route and execute its callback
+     *
+     * @param Request $request
+     * @return void
      */
     public function resolve(Request $request)
     {
@@ -83,7 +107,10 @@ class Router
     }
 
     /**
-     * Convert a route with placeholders.
+     * Convert a route with placeholders
+     *
+     * @param string $route
+     * @return string
      */
     private function convertToRegex(string $route): string
     {
@@ -92,7 +119,11 @@ class Router
     }
 
     /**
-     * Execute a callback or controller action.
+     * Execute a callback or controller action
+     *
+     * @param callable|array $callback
+     * @param array $params
+     * @return void
      */
     private function executeCallback(callable|array $callback, array $params = [])
     {

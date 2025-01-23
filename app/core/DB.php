@@ -63,12 +63,105 @@ class DB
         return $stmt;
     }
 
+    /**
+     * Insert data to a table
+     *
+     * @param string $table
+     * @param array $data
+     * @return boolean
+     */
+    public function insert(string $table, array $data): bool
+    {
+        $columns = implode(', ', array_keys($data));
+        $placeholders = implode(', ', array_fill(0, count($data), '?'));
+        $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute(array_values($data));
+    }
+
+    /**
+     * Update table data
+     *
+     * @param string $table
+     * @param integer $id
+     * @param array $data
+     * @param string $primaryKey
+     * @return boolean
+     */
+    public function update(string $table, int $id, array $data, string $primaryKey = 'id'): bool
+    {
+        $columns = implode(', ', array_map(fn($col) => "$col = ?", array_keys($data)));
+        $sql = "UPDATE $table SET $columns WHERE $primaryKey = ?";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([...array_values($data), $id]);
+    }
+
+    /**
+     * Find table data using primary key
+     *
+     * @param string $table
+     * @param integer $id
+     * @param string $primaryKey
+     * @return array|null
+     */
+    public function find(string $table, int $id, string $primaryKey = 'id'): ?array
+    {
+        $sql = "SELECT * FROM $table WHERE $primaryKey = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$id]);
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * Select all data from a table
+     *
+     * @param string $table
+     * @return array
+     */
+    public function getAll(string $table): array
+    {
+        $sql = "SELECT * FROM $table";
+        $stmt = $this->pdo->query($sql);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Delete a table row
+     *
+     * @param string $table
+     * @param integer $id
+     * @param string $primaryKey
+     * @return boolean
+     */
+    public function delete(string $table, int $id, string $primaryKey = 'id'): bool
+    {
+        $sql = "DELETE FROM $table WHERE $primaryKey = ?";
+        $stmt = $this->pdo->prepare($sql);
+        return $stmt->execute([$id]);
+    }
+
+
+
+    /**
+     * Query builder method to select table
+     *
+     * @param string $table
+     * @return self
+     */
     public function table(string $table): self
     {
         $this->table = $table;
         return $this;
     }
 
+    /**
+     * Query builder method to add where condition
+     *
+     * @param string $field
+     * @param string $operator
+     * @param mixed $value
+     * @return self
+     */
     public function where(string $field, string $operator, $value): self
     {
         $condition = "$field $operator ?";
@@ -76,6 +169,14 @@ class DB
         return $this;
     }
 
+    /**
+     * Query builder method to set or where condition
+     *
+     * @param string $field
+     * @param string $operator
+     * @param mixed $value
+     * @return self
+     */
     public function orWhere(string $field, string $operator, $value): self
     {
         $condition = "$field $operator ?";
@@ -83,15 +184,25 @@ class DB
         return $this;
     }
 
+    /**
+     * Method to add condtions dynamically to array
+     * Ready condition based on methods like where, orWhere, when, etc.
+     *
+     * @param string $condition
+     * @param string $type
+     * @param mixed $value
+     * @return void
+     */
     private function addCondition(string $condition, string $type, $value): void
     {
         if (!empty($this->conditions)) {
-            $this->conditions[] = $type; // AND or OR
+            $this->conditions[] = $type;
         }
 
+        // add start parenthesis to for query grouping
         if ($this->isGrouped) {
             $this->conditions[] = '(' . $condition;
-            $this->isGrouped = false; // Reset grouping
+            $this->isGrouped = false;
         } else {
             $this->conditions[] = $condition;
         }
@@ -99,6 +210,13 @@ class DB
         $this->params[] = $value;
     }
 
+    /**
+     * Query builder method to add query group
+     *
+     * @param boolean $condition
+     * @param callable $callback
+     * @return self
+     */
     public function when(bool $condition, callable $callback): self
     {
         if ($condition) {
@@ -109,17 +227,33 @@ class DB
         return $this;
     }
 
+    /**
+     * Query group start method
+     *
+     * @return void
+     */
     private function startGroup(): void
     {
-        // $this->conditions[] = '('; // Add an opening parenthesis
         $this->isGrouped = true;
     }
 
+    /**
+     * Query group end method
+     *
+     * @return void
+     */
     private function endGroup(): void
     {
         $this->conditions[] = ')'; // Add a closing parenthesis
     }
 
+    /**
+     * Query builder method to add where in condition
+     *
+     * @param string $field
+     * @param array $values
+     * @return self
+     */
     public function whereIn(string $field, array $values): self
     {
         $placeholders = implode(', ', array_fill(0, count($values), '?'));
@@ -128,6 +262,14 @@ class DB
         return $this;
     }
 
+    /**
+     * Query builder method to add where between condition
+     *
+     * @param string $field
+     * @param mixed $start
+     * @param mixed $end
+     * @return self
+     */
     public function whereBetween(string $field, $start, $end): self
     {
         $this->conditions[] = "$field BETWEEN ? AND ?";
@@ -136,57 +278,35 @@ class DB
         return $this;
     }
 
-    public function insert(string $table, array $data): bool
-    {
-        $columns = implode(', ', array_keys($data));
-        $placeholders = implode(', ', array_fill(0, count($data), '?'));
-        $sql = "INSERT INTO $table ($columns) VALUES ($placeholders)";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute(array_values($data));
-    }
-
-    public function update(string $table, int $id, array $data, string $primaryKey = 'id'): bool
-    {
-        $columns = implode(', ', array_map(fn($col) => "$col = ?", array_keys($data)));
-        $sql = "UPDATE $table SET $columns WHERE $primaryKey = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([...array_values($data), $id]);
-    }
-
-    public function find(string $table, int $id, string $primaryKey = 'id'): ?array
-    {
-        $sql = "SELECT * FROM $table WHERE $primaryKey = ?";
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$id]);
-        return $stmt->fetch() ?: null;
-    }
-
-    public function getAll(string $table): array
-    {
-        $sql = "SELECT * FROM $table";
-        $stmt = $this->pdo->query($sql);
-        return $stmt->fetchAll();
-    }
-
-    public function delete(string $table, int $id, string $primaryKey = 'id'): bool
-    {
-        $sql = "DELETE FROM $table WHERE $primaryKey = ?";
-        $stmt = $this->pdo->prepare($sql);
-        return $stmt->execute([$id]);
-    }
-
+    /**
+     * Query builder method to select columns
+     *
+     * @param array $columns
+     * @return self
+     */
     public function select(array $columns): self
     {
         $this->selectColumns = $columns;
         return $this;
     }
 
+    /**
+     * Query builder method to select more columns
+     *
+     * @param array $columns
+     * @return self
+     */
     public function addSelect(array $columns): self
     {
         $this->selectColumns = array_merge($this->selectColumns, $columns);
         return $this;
     }
 
+    /**
+     * Get all data from query builder
+     *
+     * @return array
+     */
     public function get(): array
     {
         $columns = implode(', ', $this->selectColumns); // Prepare column list
@@ -201,15 +321,24 @@ class DB
 
         $this->reset();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        return $stmt->fetchAll();
     }
 
-
+    /**
+     * Reset query builder conditions
+     *
+     * @return void
+     */
     private function reset(): void
     {
         $this->conditions = [];
     }
 
+    /**
+     * Get sql from query builder
+     *
+     * @return string
+     */
     public function toSql(): string
     {
         $columns = implode(', ', $this->selectColumns); // Prepare column list
@@ -240,7 +369,13 @@ class DB
         return $sql;
     }
 
-    private function quote($value)
+    /**
+     * Add single quote in both side to a value
+     *
+     * @param mixed $value
+     * @return string
+     */
+    private function quote($value): string
     {
         return "'$value'";
     }
