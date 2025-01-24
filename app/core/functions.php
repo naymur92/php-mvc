@@ -1,5 +1,6 @@
 <?php
 
+use App\Core\Config;
 use App\Core\View;
 
 /**
@@ -40,4 +41,86 @@ function dd(mixed $data): void
 function urlIs(string $value): bool
 {
     return $_SERVER['REQUEST_URI'] === $value;
+}
+
+
+/**
+ * Get absolute path of a file
+ *
+ * @param string $path
+ * @return string
+ */
+function basePath(string $path): string
+{
+    return BASE_PATH . $path;
+}
+
+
+/**
+ * Get base URL
+ *
+ * @return string
+ */
+function getBaseUrl(): string
+{
+    return Config::get('APP_URL', '/');
+}
+
+
+/**
+ * Generate URL from route
+ *
+ * @param string $route
+ * @return string
+ */
+function generateUrl(string $route): string
+{
+    return getBaseUrl() . $route;
+}
+
+
+/**
+ * Get old form data from session
+ *
+ * @param string $key
+ * @param mixed $default
+ * @return mixed
+ */
+function old(string $key, mixed $default = ''): mixed
+{
+    return $_SESSION['old'][$key] ?? $default;
+}
+
+/**
+ * Check validation error exists or not
+ *
+ * @param string $key
+ * @return boolean
+ */
+function hasError(string $key): bool
+{
+    return isset($_SESSION['error'][$key]);
+}
+
+/**
+ * Get validation errors from session
+ *
+ * @param string $key
+ * @return array
+ */
+function errors(string $key): array
+{
+    return $_SESSION['error'][$key] ?? array();
+}
+
+/**
+ * Redirect to a page
+ *
+ * @param string $route
+ * @return void
+ */
+function redirect(string $route)
+{
+    header('Location: ' . $route);
+    exit;
 }

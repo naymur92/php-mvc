@@ -25,6 +25,10 @@ class  View
             $viewContent = ob_get_clean();
 
             $this->loadTemplate($layoutFile ?? '', array_merge($params, ['viewContent' => $viewContent]));
+
+            // if isset any previous session clear them
+            if (isset($_SESSION['error'])) unset($_SESSION['error']);
+            if (isset($_SESSION['old'])) unset($_SESSION['old']);
         } else {
             throw new Exception("View file $viewFile not found!");
         }
