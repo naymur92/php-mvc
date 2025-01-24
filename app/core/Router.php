@@ -2,10 +2,14 @@
 
 namespace App\Core;
 
+use App\Http\Middleware\Middleware;
+
 class Router
 {
     protected array $routes = [];
     protected array $supportedMethods = ['GET', 'POST', 'PUT', 'DELETE'];
+    protected array $middlewares = [];
+
 
     /**
      * Register a route for any HTTP method
@@ -13,15 +17,36 @@ class Router
      * @param string $method
      * @param string $uri
      * @param callable|array $callback
-     * @return void
+     * @return self
      */
-    public function addRoute(string $method, string $uri, callable|array $callback): void
+    public function addRoute(string $method, string $uri, callable|array $callback): self
     {
         $method = strtoupper($method);
         if (!in_array($method, $this->supportedMethods)) {
             throw new \Exception("HTTP method $method not supported.");
         }
-        $this->routes[$method][$uri] = $callback;
+        $this->routes[$method][$uri] = array(
+            'callback' => $callback,
+            'middleware' => [],
+        );
+
+        return $this;
+    }
+
+    /**
+     * Add middleware to route
+     *
+     * @param array $keys
+     * @return self
+     */
+    public function only(array $keys): self
+    {
+        // Retrieve the last added route for the current HTTP method
+        $method = array_key_last($this->routes);
+        $uri = array_key_last($this->routes[$method]);
+
+        $this->routes[$method][$uri]['middleware'] = (array) $keys;
+        return $this;
     }
 
     /**
@@ -29,11 +54,11 @@ class Router
      *
      * @param string $uri
      * @param callable|array $callback
-     * @return void
+     * @return self
      */
-    public function get(string $uri, callable|array $callback): void
+    public function get(string $uri, callable|array $callback): self
     {
-        $this->addRoute('GET', $uri, $callback);
+        return $this->addRoute('GET', $uri, $callback);
     }
 
     /**
@@ -41,11 +66,11 @@ class Router
      *
      * @param string $uri
      * @param callable|array $callback
-     * @return void
+     * @return self
      */
-    public function post(string $uri, callable|array $callback): void
+    public function post(string $uri, callable|array $callback): self
     {
-        $this->addRoute('POST', $uri, $callback);
+        return $this->addRoute('POST', $uri, $callback);
     }
 
     /**
@@ -53,11 +78,11 @@ class Router
      *
      * @param string $uri
      * @param callable|array $callback
-     * @return void
+     * @return self
      */
-    public function put(string $uri, callable|array $callback): void
+    public function put(string $uri, callable|array $callback): self
     {
-        $this->addRoute('PUT', $uri, $callback);
+        return $this->addRoute('PUT', $uri, $callback);
     }
 
     /**
@@ -65,11 +90,11 @@ class Router
      *
      * @param string $uri
      * @param callable|array $callback
-     * @return void
+     * @return self
      */
-    public function delete(string $uri, callable|array $callback): void
+    public function delete(string $uri, callable|array $callback): self
     {
-        $this->addRoute('DELETE', $uri, $callback);
+        return $this->addRoute('DELETE', $uri, $callback);
     }
 
     /**
@@ -87,9 +112,17 @@ class Router
             throw new \Exception("Method $method not allowed", 405);
         }
 
-        foreach ($this->routes[$method] as $route => $callback) {
+        foreach ($this->routes[$method] as $route => $item) {
+            $callback = $item['callback'];
+            $middleware = $item['middleware'];
+
             // Static routes
             if ($route === $uri) {
+                // call middleware
+                if (!empty($middleware)) {
+                    Middleware::resolve($middleware);
+                }
+
                 return $this->executeCallback($callback, [$request]);
             }
 
@@ -97,6 +130,12 @@ class Router
             $pattern = $this->convertToRegex($route);
             if (preg_match($pattern, $uri, $matches)) {
                 array_shift($matches);
+
+                // call middleware
+                if (!empty($middleware)) {
+                    Middleware::resolve($middleware);
+                }
+
                 return $this->executeCallback($callback, array_merge([$request], $matches));
             }
         }
