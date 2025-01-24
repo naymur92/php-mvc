@@ -43,7 +43,6 @@ class App
      * Resolve the class
      *
      * @param $key
-     * @return void
      */
     public static function resolve($key)
     {

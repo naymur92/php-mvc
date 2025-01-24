@@ -1,8 +1,19 @@
 <?php
+
+use App\Core\Auth;
+
 $layoutFile = 'layouts.main';
 ?>
 
 <div class="col-sm-12">
+    <?php if (authUser()): ?>
+        <div class="m-5">
+            <h1>Hello, <?= authUser()->name; ?></h1>
+
+            <form action="/logout" method="POST"><input type="submit" class="btn btn-danger" value="Logout"></form>
+        </div>
+    <?php endif; ?>
+
     <h2>TITLE HEADING</h2>
     <h5>Title description, Dec 7, 2020</h5>
     <div class="fakeimg">Fake Image</div>

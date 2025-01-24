@@ -1,5 +1,6 @@
 <?php
 
+use App\Core\Auth;
 use App\Core\Config;
 use App\Core\View;
 
@@ -123,4 +124,15 @@ function redirect(string $route)
 {
     header('Location: ' . $route);
     exit;
+}
+
+
+/**
+ * Get authenticated user
+ *
+ * @return object|null
+ */
+function authUser(): object|null
+{
+    return Auth::user();
 }

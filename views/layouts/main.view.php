@@ -43,6 +43,12 @@
                 <li class="nav-item">
                     <a class="nav-link disabled" href="#">Disabled</a>
                 </li> -->
+
+                <?php if (!authUser()): ?>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/login">Login</a>
+                    </li>
+                <?php endif; ?>
             </ul>
         </div>
     </nav>
