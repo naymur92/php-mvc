@@ -2,39 +2,52 @@
 
 namespace App\Core;
 
+use Exception;
+
 class Config
 {
     private static array $config = [];
 
     /**
-     * Load env file into memory
+     * Load configuration files from the config directory
      *
-     * @param string $filePath
+     * @param string $fileName
      * @return void
      */
-    public static function loadEnv(string $filePath = BASE_PATH . '.env'): void
+    public static function loadConfigFile(string $fileName = 'config'): void
     {
-        if (!file_exists($filePath)) {
-            throw new \Exception("Environment file not found: $filePath");
-        }
+        $file = BASE_PATH . "config/$fileName.php";
 
-        $lines = file($filePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-        foreach ($lines as $line) {
-            // Skip comments
-            if (strpos(trim($line), '#') === 0) {
-                continue;
-            }
-
-            [$key, $value] = explode('=', $line, 2);
-            self::$config[trim($key)] = trim($value, '"');
+        if (!file_exists($file)) {
+            throw new Exception("Config file $fileName not found!");
         }
+        self::$config[$fileName] = require $file;
     }
 
     /**
-     * Get a config value by key
+     * Get a config value by filename and keys, separated by . (Ex. 'config.value.data')
      */
-    public static function get(string $key, $default = null)
+    public static function get(string $fileAndkeys)
     {
-        return self::$config[$key] ?? $default;
+        $keys = explode('.', $fileAndkeys);
+
+        if (count($keys) < 1) {
+            throw new Exception("Invalid config parameter $fileAndkeys!");
+        }
+
+        $fileName = array_shift($keys); // first value is filename
+
+        self::loadConfigFile($fileName);
+
+        $data = self::$config[$fileName];
+        foreach ($keys as $key) {
+            if (!isset($key, $data)) {
+                throw new Exception("Invalid config key $key!");
+            }
+
+            $data = $data[$key];
+        }
+
+        return $data;
     }
 }

@@ -2,7 +2,7 @@
 
 session_start();
 
-use App\Core\Config;
+use App\Core\Env;
 use App\Core\Request;
 use App\Core\Router;
 
@@ -13,7 +13,7 @@ require BASE_PATH . 'app/core/functions.php';
 require BASE_PATH . 'bootstrap.php';
 
 // Load environment configuration
-Config::loadEnv();
+Env::loadEnv();
 
 ############################### Routing part starts ###############################
 $router = new Router();

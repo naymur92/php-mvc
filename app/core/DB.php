@@ -20,11 +20,11 @@ class DB
     {
         try {
             // Get database credentials
-            $dbHost     = Config::get('DB_HOST', '127.0.0.1');
-            $dbPort     = Config::get('DB_PORT', '3306');
-            $dbName     = Config::get('DB_DATABASE', 'test');
-            $dbUser     = Config::get('DB_USERNAME', 'root');
-            $dbPassword = Config::get('DB_PASSWORD', '');
+            $dbHost     = Env::get('DB_HOST', '127.0.0.1');
+            $dbPort     = Env::get('DB_PORT', '3306');
+            $dbName     = Env::get('DB_DATABASE', 'test');
+            $dbUser     = Env::get('DB_USERNAME', 'root');
+            $dbPassword = Env::get('DB_PASSWORD', '');
 
             $this->pdo = new PDO("mysql:host=$dbHost;port=$dbPort;dbname=$dbName", $dbUser, $dbPassword);
 

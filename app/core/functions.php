@@ -2,6 +2,8 @@
 
 use App\Core\Auth;
 use App\Core\Config;
+use App\Core\CSRF;
+use App\Core\Env;
 use App\Core\View;
 
 /**
@@ -64,7 +66,7 @@ function basePath(string $path): string
  */
 function getBaseUrl(): string
 {
-    return Config::get('APP_URL', '/');
+    return Env::get('APP_URL', '/');
 }
 
 
@@ -135,4 +137,26 @@ function redirect(string $route)
 function authUser(): object|null
 {
     return Auth::user();
+}
+
+
+/**
+ * Get csrf value
+ *
+ * @return string
+ */
+function csrf(): string
+{
+    return htmlspecialchars(CSRF::generateToken());
+}
+
+
+/**
+ * Get csrf field for form
+ *
+ * @return string
+ */
+function csrfField(): string
+{
+    return '<input type="hidden" name="_csrf_token" value="' . csrf() . '">';
 }

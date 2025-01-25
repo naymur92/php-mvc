@@ -8,6 +8,8 @@ $layoutFile = 'layouts.main';
     <hr>
 
     <form action="/users" method="POST">
+        <?= csrfField(); ?>
+
         <div class="form-group">
             <label for="_name">Name</label>
             <input type="text" name="name" id="_name" class="form-control <?= hasError('name') ? 'is-invalid' : '' ?>" value="<?= old('name') ?>">

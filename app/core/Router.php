@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Http\Middleware\CsrfMiddleware;
 use App\Http\Middleware\Middleware;
 
 class Router
@@ -118,6 +119,8 @@ class Router
 
             // Static routes
             if ($route === $uri) {
+                $this->checkCsrf($method, $uri, $request);
+
                 // call middleware
                 if (!empty($middleware)) {
                     Middleware::resolve($middleware);
@@ -130,6 +133,8 @@ class Router
             $pattern = $this->convertToRegex($route);
             if (preg_match($pattern, $uri, $matches)) {
                 array_shift($matches);
+
+                $this->checkCsrf($method, $uri, $request);
 
                 // call middleware
                 if (!empty($middleware)) {
@@ -192,5 +197,22 @@ class Router
 
         // For simple callable functions
         return call_user_func_array($callback, $routeParams);
+    }
+
+    /**
+     * Check csrf value existing in $request
+     *
+     * @param string $method
+     * @param string $uri
+     * @param Request $request
+     * @return void
+     */
+    private function checkCsrf(string $method, string $uri, Request $request)
+    {
+        $csrfExceptions = Config::get('config.csrf-exceptions');
+
+        $csrfMiddleware = new CsrfMiddleware($csrfExceptions ?? []);
+
+        $csrfMiddleware->verify($method, $uri, $request);
     }
 }
