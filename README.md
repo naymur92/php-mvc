@@ -165,7 +165,7 @@ class HomeController extends Controller {
 Define database models inside `/app/Models/`:
 
 ```php
-class User extends Model {
+class User extends BaseModel {
     protected $table = 'users';
     protected $primaryKey = 'user_id';
     protected array $protected = ['password'];
