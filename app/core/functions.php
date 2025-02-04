@@ -4,6 +4,7 @@ use App\Core\Auth;
 use App\Core\Config;
 use App\Core\CSRF;
 use App\Core\Env;
+use App\Core\Router;
 use App\Core\Session;
 use App\Core\View;
 
@@ -44,7 +45,7 @@ function dd(mixed $data): void
  */
 function urlIs(string $value): bool
 {
-    return $_SERVER['REQUEST_URI'] === $value;
+    return Router::filterCurrentUri($_SERVER['REQUEST_URI']) === $value;
 }
 
 
@@ -56,7 +57,15 @@ function urlIs(string $value): bool
  */
 function urlInList(array $routeList): bool
 {
-    return in_array($_SERVER['REQUEST_URI'], $routeList);
+    $currentUri = Router::filterCurrentUri($_SERVER['REQUEST_URI']);
+
+    foreach ($routeList as $route) {
+        $pattern = "#^" . preg_replace('/\{[^\/]+\}/', '([^/]+)', $route) . "$#";
+        if (preg_match($pattern, $currentUri, $matches)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 
@@ -79,19 +88,20 @@ function basePath(string $path): string
  */
 function getBaseUrl(): string
 {
-    return Env::get('APP_URL', '/');
-}
+    // Get the script name (e.g., /folderName/public/index.php)
+    $scriptName = $_SERVER['SCRIPT_NAME'];
 
+    // Remove /index.php from the script name to get the base path
+    $basePath = str_replace('/index.php', '', $scriptName);
 
-/**
- * Generate URL from route
- *
- * @param string $route
- * @return string
- */
-function generateUrl(string $route): string
-{
-    return getBaseUrl() . $route;
+    // Get the protocol (http or https)
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+
+    // Get the host (e.g., localhost or domain.com)
+    $host = $_SERVER['HTTP_HOST'];
+
+    // Combine protocol, host, and base path to form the base URL
+    return $protocol . $host . $basePath;
 }
 
 
@@ -137,7 +147,7 @@ function errors(string $key): array
  */
 function redirect(string $route)
 {
-    header('Location: ' . $route);
+    header('Location: ' . route($route));
     exit;
 }
 
@@ -206,8 +216,84 @@ function getConfig(string $path)
  */
 function getFlashData(): array
 {
-    $data = $_SESSION['_flash'] ?? array();
-    Session::unflash();
+    return Session::getFlash();
+}
 
-    return $data;
+
+/**
+ * Get popup data from session
+ *
+ * @return array
+ */
+function getPopupData(): array
+{
+    return Session::getPopup();
+}
+
+
+/**
+ * Generate full route with base url
+ *
+ * @param string $path
+ * @return string
+ */
+function route(string $path): string
+{
+    // Get the base URL
+    $baseUrl = getBaseUrl();
+
+    // Ensure the path starts with a slash
+    if ($path == '' || $path[0] !== '/') {
+        $path = '/' . $path;
+    }
+
+    // Return the full URL
+    return $baseUrl . $path;
+}
+
+
+/**
+ * Set unique id in form open and check it to controller to prevent multiple submit
+ *
+ * @param $operationType
+ */
+function setUnsetUniqueId($operationType = null)
+{
+    if ($operationType == 'get') {
+        $session_data = $_SESSION['unique_id'];
+
+        $_SESSION['unique_id'] = null;
+
+        return $session_data;
+    } else {
+        $uniqid = substr(bin2hex(openssl_random_pseudo_bytes(15)), 0, 30);
+        $_SESSION['unique_id'] = $uniqid;
+    }
+}
+
+
+/**
+ * Encoode array to unique ID
+ *
+ * @param array $params
+ * @return string
+ */
+function encodeData(array $params): string
+{
+    $str = implode('||', $params);
+
+    return base64_encode($str);
+}
+
+/**
+ * Decode encoded data to array
+ *
+ * @param string $str
+ * @return array
+ */
+function decodeData(string $str): array
+{
+    $str = base64_decode($str);
+
+    return explode("||", $str);
 }
