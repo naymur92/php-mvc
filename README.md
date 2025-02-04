@@ -144,8 +144,8 @@ Access the application at **http://localhost:8000**.
 Define application routes inside **`/routes/web.php`**:
 
 ```php
-Router::get('/', 'HomeController@index');
-Router::post('/login', 'AuthenticationController@index');
+$router->get('/', [HomeController::class, 'index']);
+$router->get('/login', [AuthenticationController::class, 'index']);
 ```
 
 ### **📌 Creating Controllers**
