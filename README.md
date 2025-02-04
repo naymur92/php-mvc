@@ -58,8 +58,8 @@ The framework follows a standard **Model-View-Controller (MVC)** pattern:
 ```
 /php-mvc
 │── /app
-│   ├── /Contracts                  # Interface definitions for core components
-│   │── /Core
+│   ├── /contracts                  # Interface definitions for core components
+│   │── /core
 │   │   ├── App.php                 # Bind and resolves containers
 │   │   ├── Auth.php                # Manages user authentication logic
 │   │   ├── Authenticator.php       # Handles user authentication processes
