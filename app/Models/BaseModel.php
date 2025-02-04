@@ -10,6 +10,52 @@ abstract class BaseModel implements ModelInterface
     protected $table;
     protected $primaryKey = 'id';
     protected array $fillable = [];
+    protected array $attributes = [];
+    protected array $protected = [];
+
+    // Magic getter for dynamic properties
+    public function __get($key)
+    {
+        if (array_key_exists($key, $this->attributes)) {
+            return $this->attributes[$key];
+        }
+
+        throw new \Exception("Property {$key} does not exist.");
+    }
+
+    // Magic setter for dynamic properties
+    public function __set($key, $value)
+    {
+        $this->attributes[$key] = $value;
+    }
+
+    // Check if a property is set
+    public function __isset($key)
+    {
+        return isset($this->attributes[$key]);
+    }
+
+
+    /**
+     * Get table name
+     *
+     * @return string
+     */
+    public function getTable(): string
+    {
+        return $this->table;
+    }
+
+
+    /**
+     * Get primary key name
+     *
+     * @return string
+     */
+    public function getPrimaryKey(): string
+    {
+        return $this->primaryKey;
+    }
 
     /**
      * Filter fillable fields
@@ -30,25 +76,43 @@ abstract class BaseModel implements ModelInterface
      * Insert data to table
      *
      * @param array $data
-     * @return boolean
+     * @return int|null
      */
-    public function insert(array $data): bool
+    public function insert(array $data): ?int
     {
         $data = $this->filterFillable($data);
         $db = DB::getInstance();
-        return $db->insert($this->table, $data);
+        $lastInsertId = $db->insert($this->table, $data);
+
+        if ($lastInsertId) {
+            // Dynamically set the primary key property on the current instance
+            $primaryKey = $this->primaryKey;
+            $this->$primaryKey = $lastInsertId;
+        }
+
+        return $lastInsertId;
     }
 
     /**
-     * Update table data
+     * Update table data.
      *
-     * @param integer $id
-     * @param array $data
-     * @return boolean
+     * @param array $data Data to update.
+     * @param int|null $id Optional ID for static usage.
+     * @return bool
      */
-    public function update(int $id, array $data): bool
+    public function update(array $data, ?int $id = null): bool
     {
         $data = $this->filterFillable($data);
+
+        // If $id is not provided, use the primary key from the instance
+        if ($id === null) {
+            if (isset($this->{$this->primaryKey})) {
+                $id = $this->{$this->primaryKey};
+            } else {
+                throw new \InvalidArgumentException("ID is required to update a record.");
+            }
+        }
+
         $db = DB::getInstance();
         return $db->update($this->table, $id, $data, $this->primaryKey);
     }
@@ -57,22 +121,37 @@ abstract class BaseModel implements ModelInterface
      * Find table data
      *
      * @param integer $id
-     * @return array|null
+     * @return self|null
      */
-    public function find(int $id): ?array
+    public function find(int $id): ?self
     {
         $db = DB::getInstance();
-        return $db->find($this->table, $id, $this->primaryKey);
+        $result = $db->find($this->table, $id, $this->primaryKey);
+
+        if (!$result) {
+            return null;
+        }
+
+        return self::makeInstance($result);
     }
 
     /**
      * Delete data from table (model)
      *
-     * @param integer $id
-     * @return boolean
+     * @param int|null $id Optional ID. If not provided, use the primary key value from the instance.
+     * @return bool
      */
-    public function delete(int $id): bool
+    public function delete(?int $id = null): bool
     {
+        // If $id is not provided, use the primary key from the instance
+        if ($id === null) {
+            if (isset($this->{$this->primaryKey})) {
+                $id = $this->{$this->primaryKey};
+            } else {
+                throw new \InvalidArgumentException("ID is required to delete a record.");
+            }
+        }
+
         $db = DB::getInstance();
         return $db->delete($this->table, $id, $this->primaryKey);
     }
@@ -85,7 +164,8 @@ abstract class BaseModel implements ModelInterface
     public function getAll(): array
     {
         $db = DB::getInstance();
-        return $db->getAll($this->table);
+        $results = $db->getAll($this->table);
+        return $this->filterProtectedFields($results);
     }
 
 
@@ -114,7 +194,7 @@ abstract class BaseModel implements ModelInterface
      */
     public function where(string $field, string $operator, $value): self
     {
-        DB::getInstance()->table($this->table)->where($field, $operator, $value);
+        DB::getInstance()->where($field, $operator, $value);
         return $this;
     }
 
@@ -128,7 +208,7 @@ abstract class BaseModel implements ModelInterface
      */
     public function orWhere(string $field, string $operator, $value): self
     {
-        DB::getInstance()->table($this->table)->orWhere($field, $operator, $value);
+        DB::getInstance()->orWhere($field, $operator, $value);
         return $this;
     }
 
@@ -142,7 +222,7 @@ abstract class BaseModel implements ModelInterface
      */
     public function whereIn(string $field, array $values): self
     {
-        DB::getInstance()->table($this->table)->whereIn($field, $values);
+        DB::getInstance()->whereIn($field, $values);
         return $this;
     }
 
@@ -150,15 +230,55 @@ abstract class BaseModel implements ModelInterface
      * Add 'where between' condition to query builder
      *
      * @param string $field
-     * @param [type] $start
-     * @param [type] $end
+     * @param $start
+     * @param $end
      * @return self
      */
     public function whereBetween(string $field, $start, $end): self
     {
-        DB::getInstance()->table($this->table)->whereBetween($field, $start, $end);
+        DB::getInstance()->whereBetween($field, $start, $end);
         return $this;
     }
+
+    /**
+     * Add order by filter to columns
+     *
+     * @param string $column
+     * @param string $direction
+     * @return self
+     */
+    public function orderBy(string $column, string $direction = 'ASC'): self
+    {
+        DB::getInstance()->orderBy($column, $direction);
+        return $this;
+    }
+
+
+    /**
+     * Select columns
+     *
+     * @param array $columns
+     * @return self
+     */
+    public function select(array $columns): self
+    {
+        DB::getInstance()->select($columns);
+        return $this;
+    }
+
+
+    /**
+     * Add new select columns to previous
+     *
+     * @param array $columns
+     * @return self
+     */
+    public function addSelect(array $columns): self
+    {
+        DB::getInstance()->addSelect($columns);
+        return $this;
+    }
+
 
     /**
      * Get all data from table using query builder
@@ -167,8 +287,49 @@ abstract class BaseModel implements ModelInterface
      */
     public function get(): array
     {
-        return DB::getInstance()
+        $results = DB::getInstance()
             ->table($this->table)
             ->get();
+
+        return $this->filterProtectedFields($results);
+    }
+
+    /**
+     * Create a new instance and populate it with the given attributes.
+     *
+     * @param array $attributes
+     * @return static
+     */
+    public static function makeInstance(array $attributes): static
+    {
+        $instance = new static();
+
+        foreach ($attributes as $key => $value) {
+            if (!in_array($key, $instance->protected)) {
+                $instance->$key = $value;
+                $instance->attributes[$key] = $value;
+            }
+        }
+
+        return $instance;
+    }
+
+    /**
+     * Filter protected fields
+     *
+     * @param array $results
+     * @return array
+     */
+    private function filterProtectedFields(array $results): array
+    {
+        // If there are no protected fields, return as is
+        if (empty($this->protected)) {
+            return $results;
+        }
+
+        // Remove protected fields from each result
+        return array_map(function ($record) {
+            return array_diff_key($record, array_flip($this->protected));
+        }, $results);
     }
 }

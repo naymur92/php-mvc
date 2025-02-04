@@ -4,9 +4,9 @@ namespace App\Contracts;
 
 interface ModelInterface
 {
-    public function insert(array $data): bool;
-    public function update(int $id, array $data): bool;
-    public function find(int $id): ?array;
+    public function insert(array $data): ?int;
+    public function update(array $data, ?int $id = null): bool;
+    public function find(int $id): ?self;
     public function delete(int $id): bool;
     public function getAll(): array;
 
@@ -16,6 +16,9 @@ interface ModelInterface
     public function orWhere(string $field, string $operator, $value): self;
     public function whereIn(string $field, array $values): self;
     public function whereBetween(string $field, $start, $end): self;
+    public function orderBy(string $column, string $direction = 'ASC'): self;
+    public function select(array $columns): self;
+    public function addSelect(array $columns): self;
     // public function when(bool $condition, callable $callback): self;
     public function get(): array;
 }
