@@ -7,6 +7,7 @@ class Middleware
     public const MAP = [
         'guest' => GuestMiddleware::class,
         'auth' => AuthMiddleware::class,
+        'cors' => CorsMiddleware::class,
     ];
 
     public static function resolve(array $keys): void

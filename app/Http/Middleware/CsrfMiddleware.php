@@ -31,7 +31,12 @@ class CsrfMiddleware
             return true; // Skip CSRF check for GET requests or defined routes
         }
 
-        $token = $request->input('_csrf_token') ?? '';
+        // Check token from request body or headers
+        $token = $request->input('_csrf_token')
+            ?? $request->header('X-CSRF-TOKEN')
+            ?? $request->header('X-Csrf-Token')
+            ?? $request->header('X-Requested-With')
+            ?? '';
 
         if (!Csrf::verifyToken($token)) {
             throw new \Exception("Invalid CSRF token", 403);
