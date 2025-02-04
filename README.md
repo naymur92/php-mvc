@@ -199,7 +199,6 @@ Store views inside `/views/`:
 ## **⚡ Performance Optimizations**
 
 - **Autoloading** – Uses Composer for efficient class loading.
-- **Lazy Loading Models** – Improves database performance.
 - **Minimal Core** – Lightweight structure ensures fast execution.
 
 ---
